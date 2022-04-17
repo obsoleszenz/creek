@@ -1,0 +1,51 @@
+name: Rust CI
+
+on:
+  pull_request:
+  push:
+    branches:
+      - master
+      - staging
+      - trying
+
+jobs:
+  build_and_test:
+    name: Build and test
+    strategy:
+      matrix:
+        include:
+          # Currently used Rust version, same as in `rust-toolchain` file.
+          - os: ubuntu-latest
+            rust: 1.60.0
+
+          # Minimum Supported Rust Version = 1.56.0
+          #
+          - os: ubuntu-latest
+            rust: 1.56.0
+    runs-on: ${{ matrix.os }}
+    steps:
+    - uses: actions/checkout@master
+
+    - name: Install alsa
+      run: sudo apt install alsa libasound2-dev
+
+    - name: Install ${{ matrix.rust }}
+      uses: actions-rs/toolchain@v1
+      with:
+        toolchain: ${{ matrix.rust }}
+        override: true
+
+    - name: Cache rust cargo artifacts
+      uses: swatinem/rust-cache@v1
+
+    - name: check
+      uses: actions-rs/cargo@v1
+      with:
+        command: check
+        args: -p creek-core -p creek-decode-symphonia -p creek-encode-wav --tests --features decode-all
+
+    - name: tests
+      uses: actions-rs/cargo@v1
+      with:
+        command: test
+        args: -p creek-core -p creek-decode-symphonia -p creek-encode-wav
